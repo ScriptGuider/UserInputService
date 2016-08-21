@@ -73,7 +73,7 @@ end
 
 -- Library & Input
 local Keys  = {}
-local Mouse = {}
+local Mouse = {__newindex = PlayerMouse}
 local Scope = {}
 local KeyEvents = {}
 local MouseEvents = {}
@@ -102,23 +102,28 @@ function Keys:__index(v)
 	end
 end
 
-function Mouse:__index(v)
-	if type(v) == "string" and pcall(function() local _ = PlayerMouse[v].connect end) then
-		local Stored = MouseEvents[v]
-		if not Stored then
-			MouseEvents[v] = newSignal()
-			Stored = MouseEvents[v]
-			PlayerMouse[v]:connect(function(...)
-				Stored:Fire(Scope, ...)
-			end)
-		end
-		return Stored
+local function MouseInput()
+	local Stored = newSignal()
+	MouseEvents[v] = Stored
+	return function(...)
+		Stored:Fire(Scope, ...)
 	end
 end
 
--- Return the player mouse
-function Input:GetMouse()
-	return PlayerMouse
+function Mouse:__index(v)
+	local Mickey = PlayerMouse[v]
+	if type(v) == "string" and pcall(function() local _ = Mickey.connect end) then
+		local Stored = MouseEvents[v]
+		if not Stored then
+			Stored = MouseInput()
+			Mickey:connect(Stored)
+		end
+		return Stored
+	elseif Mickey then
+		return Mickey
+	else
+		error(Mickey .. " is not a valid member of PlayerMouse")
+	end
 end
 
 local function InputHandler(KeyEvent)

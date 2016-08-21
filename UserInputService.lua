@@ -10,19 +10,6 @@ local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local PlayerMouse = Player:GetMouse()
 
--- Library & Input
-local Keys  = {};
-local Mouse = {};
-local Scope = {};
-local Input = {
-	Keys = Keys;
-	Mouse = Mouse;
-	__newindex = InputService;
-}
-
-local KeyEvents = {}
-local MouseEvents = {}
-
 -- Helper function
 local function CreateEvent()
 	local this = {}
@@ -73,6 +60,19 @@ local function CreateEvent()
 	return this
 end
 
+-- Library & Input
+local Keys  = {}
+local Mouse = {}
+local Scope = {}
+local KeyEvents = {}
+local MouseEvents = {}
+local Input = {
+	Keys = setmetatable(Keys, Keys);
+	Mouse = setmetatable(Mouse, Mouse);
+	__newindex = InputService;
+	CreateEvent = CreateEvent; -- Create a new event signal
+}
+
 -- Convert text to KeyCode values
 function Keys:__index(v)
 	if type(v) == "string" then
@@ -92,24 +92,18 @@ function Keys:__index(v)
 end
 
 function Mouse:__index(v)
-	if type(v) == "string" and pcall(function() local _ = Mouse[v].connect end) then
+	if type(v) == "string" and pcall(function() local _ = PlayerMouse[v].connect end) then
 		local Stored = MouseEvents[v]
 		if not Stored then
 			MouseEvents[v] = CreateEvent()
 			Stored = MouseEvents[v]
-			Mouse[v]:connect(function(...)
+			PlayerMouse[v]:connect(function(...)
 				Stored:Fire(Scope, ...)
 			end)
 		end
 		return Stored
 	end
 end
-
-setmetatable(Keys, Keys)
-setmetatable(Mouse, Mouse)
-
--- Create a new event signal
-Input.CreateEvent = CreateEvent
 
 -- Return the player mouse
 function Input:GetMouse()

@@ -8,9 +8,13 @@ to the writer.
 ##API
 ```javascript
 class UserInputService
-  table CreateEvent()
-//	Returns a Custom Event that imitates ROBLOX's BindableEvents, giving you the ability to connect, disconnect,
-//	wait, and fire the custom event whenever you want.
+	Properties
+	
+		table/PlayerMouse Mouse
+//			returns the LocalPlayer's Mouse with added API (demonstrated below)
+		
+		table Keys
+//			Similar to Mouse, you can access Keys from this table
 ```
 ##Key events
 

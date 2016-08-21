@@ -1,143 +1,128 @@
--- SG
+-- @author ScriptGuider
+-- @author Narrev
+-- UserInputService wrapper
+
 -- Services
 local InputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 
 -- Client
 local Player = Players.LocalPlayer
-local Mouse = Player:GetMouse()
+local PlayerMouse = Player:GetMouse()
 
 -- Library & Input
-local Input = {}
-Input.Keys  = {}
-Input.Mouse = {}
-Input.Scope = {}
+local Keys  = {};
+local Mouse = {};
+local Scope = {};
+local Input = {
+	Keys = Keys;
+	Mouse = Mouse;
+	__newindex = InputService;
+}
 
-local KeyEvents   = {}
+local KeyEvents = {}
 local MouseEvents = {}
 
--- Utility functions
+-- Helper function
 local function CreateEvent()
 	local this = {}
 	local connections = {}
-	local event = Instance.new("BindableEvent")
-	
+
+	local BindData
+	local BindableEvent = Instance.new("BindableEvent")
+
 	function this:connect(func)
+		if not func then error("connect(nil)", 2) end
 		local scope = {}
-		local signal = event.Event:connect(function(callback)
-			callback(scope, func)
+
+		local signal = BindableEvent.Event:connect(function()
+			func(scope, unpack(BindData))
 		end)
+
 		connections[signal] = true
 		local new = {}
 		function new:disconnect()
+			signal:disconnect()
 			scope = nil
 			connections[signal] = nil
-			signal:disconnect()
 		end
 		return new
 	end
-	
+
 	function this:disconnect()
-		for i,v in next, connections do
-			i:disconnect()
-			connections[i] = nil
+		for connection, _ in next, connections do
+			connection:disconnect()
+			connections[connection] = nil
 		end
+		-- Deconstruct table?
+		BindData, this, connections = BindableEvent:Destroy()
 	end
-	
+
 	function this:wait()
-		return event.Event:wait()
+		BindableEvent.Event:wait()
+		assert(BindData, "Missing arg data, likely due to :TweenSize/Position corrupting threadrefs.")
+		return unpack(BindData)
 	end
-	
+
 	-- Bypasses object cloning
 	function this:Fire(...)
-		local args = {...}
-		event:Fire(function(scope, main)
-			main(scope, unpack(args))
-		end)
+		BindData = {...}
+		BindableEvent:Fire()
 	end
-	
+
 	return this
 end
 
--- Create key input events
-local function CreateKeyEvent()
-	return {
-		KeyUp   = CreateEvent(),
-		KeyDown = CreateEvent()
-	}
-end
+-- Convert text to KeyCode values
+function Keys:__index(v)
+	if type(v) == "string" then
+		local KeyCode = Enum.KeyCode[v]
+		local KeyValue = KeyCode.Value
+		local Key = KeyEvents[KeyValue]
 
-local function ValidKeyEvent(v)
-	local KeyCode = Enum.KeyCode[v]
-	local KeyValue = KeyCode.Value
-	local Key = KeyEvents[KeyValue]
-	if not Key then
-		KeyEvents[KeyValue] = CreateKeyEvent()
-		Key = KeyEvents[KeyValue]
+		if not Key then
+			KeyEvents[KeyValue] = {
+				KeyUp   = CreateEvent();
+				KeyDown = CreateEvent();
+			}
+			Key = KeyEvents[KeyValue]
+		end
+		return Key
 	end
-	return Key
 end
 
-local function ValidMouseEvent(v)
-	local IsEvent = pcall(function()
-		local _ = Mouse[v].connect
-	end)
-	if IsEvent then
+function Mouse:__index(v)
+	if type(v) == "string" and pcall(function() local _ = Mouse[v].connect end) then
 		local Stored = MouseEvents[v]
 		if not Stored then
 			MouseEvents[v] = CreateEvent()
 			Stored = MouseEvents[v]
 			Mouse[v]:connect(function(...)
-				Stored:Fire(Input.Scope, ...)
+				Stored:Fire(Scope, ...)
 			end)
 		end
 		return Stored
 	end
 end
 
--- Convert text to KeyCode values
-setmetatable(Input.Keys, {
-	__index = function(t,k)
-		if type(k) == "string" then
-			return ValidKeyEvent(k)
-		end
-	end,
-})
-
-setmetatable(Input.Mouse, {
-	__index = function(t,k)
-		if type(k) == "string" then
-			return ValidMouseEvent(k)
-		end
-	end
-})
-
------------------------
--- Library interface --
------------------------
+setmetatable(Keys, Keys)
+setmetatable(Mouse, Mouse)
 
 -- Create a new event signal
-function Input:CreateEvent()
-	return CreateEvent()
-end
-
--- Return the UIS
-function Input:GetService()
-	return InputService
-end
+Input.CreateEvent = CreateEvent
 
 -- Return the player mouse
 function Input:GetMouse()
-	return Mouse
+	return PlayerMouse
 end
 
 -- Input began listener
 InputService.InputBegan:connect(function(InputObject)
 	local KeyCode   = InputObject.KeyCode
 	local KeyInput  = KeyEvents[KeyCode.Value]
-	
+
 	if KeyInput then
-		KeyInput.KeyDown:Fire(Input.Scope)
+		KeyInput.KeyDown:Fire(Scope)
 	end
 end)
 
@@ -145,29 +130,25 @@ end)
 InputService.InputEnded:connect(function(InputObject)
 	local KeyCode   = InputObject.KeyCode
 	local KeyInput  = KeyEvents[KeyCode.Value]
-	
+
 	if KeyInput then
-		KeyInput.KeyUp:Fire(Input.Scope)
+		KeyInput.KeyUp:Fire(Scope)
 	end
 end)
 
--- Lock the library
-local function Lock(t)
-	local proxy = setmetatable({},{
-		__index = function(_,k)
-			if type(t[k]) == "table" then
-				return Lock(t[k])
-			else
-				return t[k]
+function Input:__index(i)
+	local Variable = InputService[i]
+	if Variable then
+		if type(Variable) == "function" then
+			local func = Variable
+			function Variable(...)
+				return func(InputService, ...)
 			end
-		end,
-		__newindex = function()
-			warn("Cannot change a protected table")
-		end,
-		__metatable = "Metatable is locked"
-	})
-	return proxy
+		end
+		return Variable
+	else
+		error(Variable .. " is not a valid member of UserInputService")
+	end
 end
 
--- Return 
-return Lock(Input)
+return setmetatable(Input, Input)

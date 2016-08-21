@@ -30,16 +30,16 @@ local Q = Keys.Q
 
 local QPress = Q.KeyDown:connect(function()
 	print("Q was pressed")
-end
+end)
 
 -- Manual fire
-QPress:Fire()
+Q.KeyDown:Fire()
 
--- Disconnect
-QPress:disconnect()
+Q.KeyDown:disconnect() -- disconnect everything binded to Q.KeyDown
+QPress:disconnect() -- disconnect one connection
 
 -- Wait until the player presses
-QPress:wait()
+Q.KeyDown:wait()
 ```
 Each key has a "KeyUp" and "KeyDown" event that comes with it. So you can't just
 connect the key to an event, you must specify if the event will fire on KeyUp
@@ -61,5 +61,10 @@ local LeftClick = Mouse.Button1Down:connect(function()
 end)
 
 -- And of course you could fire it manually, since it returns a custom event
-LeftClick:Fire()
+Mouse.Button1Down:Fire()
+
+Mouse.Button1Down:disconnect() -- Disconnect all connections binded to this event
+LeftClick:disconnect() -- Disconnect the one connection
+
+Mouse.Button1Down:wait() -- Wait for the Event to happen
 ```

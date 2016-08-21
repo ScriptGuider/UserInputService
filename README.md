@@ -11,10 +11,6 @@ class UserInputService
   table CreateEvent()
 //	Returns a Custom Event that imitates ROBLOX's BindableEvents, giving you the ability to connect, disconnect,
 //	wait, and fire the custom event whenever you want.
-
-PlayerMouse GetMouse()
-//  Returns the LocalPlayer's PlayerMouse object
-
 ```
 ##Key events
 

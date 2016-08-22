@@ -10,6 +10,7 @@ local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local PlayerMouse = Player:GetMouse()
 
+-- Pseudo Objects
 local Signal = {}
 Signal.__index = Signal
 
@@ -87,26 +88,18 @@ local Input = {
 -- Convert text to KeyCode values
 function Keys:__index(v)
 	if type(v) == "string" then
-		local KeyCode = Enum.KeyCode[v]
-		local KeyValue = KeyCode.Value
+--		local KeyCode = Enum.KeyCode[v]
+		local KeyValue = Enum.KeyCode[v].Value
 		local Key = KeyEvents[KeyValue]
 
 		if not Key then
-			KeyEvents[KeyValue] = {
+			Key = {
 				KeyUp = newSignal();
 				KeyDown = newSignal();
 			}
-			Key = KeyEvents[KeyValue]
+			KeyEvents[KeyValue] = Key
 		end
 		return Key
-	end
-end
-
-local function MouseInput()
-	local Stored = newSignal()
-	MouseEvents[v] = Stored
-	return function(...)
-		Stored:Fire(Scope, ...)
 	end
 end
 
@@ -114,9 +107,13 @@ function Mouse:__index(v)
 	local Mickey = PlayerMouse[v]
 	if type(v) == "string" and pcall(function() local _ = Mickey.connect end) then
 		local Stored = MouseEvents[v]
+
 		if not Stored then
-			Stored = MouseInput()
-			Mickey:connect(Stored)
+			Stored = newSignal()
+			MouseEvents[v] = Stored
+			Mickey:connect(function(...)
+				Stored:Fire(Scope, ...)
+			end)
 		end
 		return Stored
 	elseif Mickey then
@@ -126,10 +123,10 @@ function Mouse:__index(v)
 	end
 end
 
-local function InputHandler(KeyEvent)
+local function KeyInputHandler(KeyEvent)
 	return function(InputObject)
-		local KeyCode   = InputObject.KeyCode
-		local KeyInput  = KeyEvents[KeyCode.Value]
+--		local KeyCode   = InputObject.KeyCode
+		local KeyInput  = KeyEvents[InputObject.KeyCode.Value]
 
 		if KeyInput then
 			KeyInput[KeyEvent]:Fire(Scope)
@@ -137,8 +134,8 @@ local function InputHandler(KeyEvent)
 	end
 end
 
-InputService.InputBegan:connect(InputHandler("KeyUp")) -- InputBegan listener
-InputService.InputEnded:connect(InputHandler("KeyDown")) -- InputEnded listener
+InputService.InputBegan:connect(KeyInputHandler("KeyUp")) -- InputBegan listener
+InputService.InputEnded:connect(KeyInputHandler("KeyDown")) -- InputEnded listener
 
 function Input:__index(i)
 	local Variable = InputService[i]

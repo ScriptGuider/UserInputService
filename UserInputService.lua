@@ -73,11 +73,10 @@ function Signal:Fire(...)
 end
 
 -- Library & Input
+local RegisteredKeys = {}
 local Keys  = {}
 local Mouse = {__newindex = PlayerMouse}
 local Scope = {}
-local KeyEvents = {}
-local MouseEvents = {}
 local Input = {
 	Keys = setmetatable(Keys, Keys);
 	Mouse = setmetatable(Mouse, Mouse);
@@ -85,51 +84,42 @@ local Input = {
 	CreateEvent = newSignal; -- Create a new event signal
 }
 
--- Convert text to KeyCode values
 function Keys:__index(v)
-	if type(v) == "string" then
---		local KeyCode = Enum.KeyCode[v]
-		local KeyValue = Enum.KeyCode[v].Value
-		local Key = KeyEvents[KeyValue]
-
-		if not Key then
-			Key = {
-				KeyUp = newSignal();
-				KeyDown = newSignal();
-			}
-			KeyEvents[KeyValue] = Key
-		end
-		return Key
-	end
+	assert(type(v) == "string", "Table Keys should be indexed by a string")
+	Key = {
+		KeyUp = newSignal();
+		KeyDown = newSignal();
+	}
+	self[v] = Key
+	RegisteredKeys[v] = true
+	return Key
 end
 
 function Mouse:__index(v)
 	local Mickey = PlayerMouse[v]
 	if type(v) == "string" and pcall(function() local _ = Mickey.connect end) then
-		local Stored = MouseEvents[v]
+		local Stored = newSignal()
+		self[v] = Stored
+		local Scope = Scope
+		Mickey:connect(function(...)
+			Stored:Fire(Scope, ...)
+		end)
 
-		if not Stored then
-			Stored = newSignal()
-			MouseEvents[v] = Stored
-			Mickey:connect(function(...)
-				Stored:Fire(Scope, ...)
-			end)
-		end
 		return Stored
-	elseif Mickey then
-		return Mickey
 	else
-		error(Mickey .. " is not a valid member of PlayerMouse")
+		return Mickey or error(Mickey .. " is not a valid member of PlayerMouse")
 	end
 end
 
 local function KeyInputHandler(KeyEvent)
-	return function(InputObject)
---		local KeyCode   = InputObject.KeyCode
-		local KeyInput  = KeyEvents[InputObject.KeyCode.Value]
-
-		if KeyInput then
-			KeyInput[KeyEvent]:Fire(Scope)
+	local Scope = Scope
+	local RegisteredKeys = RegisteredKeys
+	return function(KeyName, processed)
+		if not processed then
+			KeyName = KeyName.KeyCode.Name
+			if RegisteredKeys[KeyName] then
+				Keys[KeyName][KeyEvent]:Fire(Scope)
+			end
 		end
 	end
 end
@@ -138,18 +128,14 @@ InputService.InputBegan:connect(KeyInputHandler("KeyUp")) -- InputBegan listener
 InputService.InputEnded:connect(KeyInputHandler("KeyDown")) -- InputEnded listener
 
 function Input:__index(i)
-	local Variable = InputService[i]
-	if Variable then
-		if type(Variable) == "function" then
-			local func = Variable
-			function Variable(...)
-				return func(InputService, ...)
-			end
+	local Variable = InputService[i] or error(Variable .. " is not a valid member of UserInputService")
+	if type(Variable) == "function" then
+		local func = Variable
+		function Variable(...) -- We need to wrap functions to mimic ":" syntax
+			return func(InputService, select(2, ...))
 		end
-		return Variable
-	else
-		error(Variable .. " is not a valid member of UserInputService")
 	end
+	return Variable
 end
 
 return setmetatable(Input, Input)

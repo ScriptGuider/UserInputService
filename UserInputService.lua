@@ -55,12 +55,15 @@ function Signal:Disconnect()
 end
 
 function Signal:Wait()
-	repeat until self.Go or not Wait(Heartbeat)
-	self.Go = false
+	local Go, Connection
+	Connection = self:Connect(function()
+		Go = true
+		Connection:Disconnect()
+	end)
+	repeat until Go or not Wait(Heartbeat)
 end
 
 local function FireSignal(self, ...)
-	self.Go = true
 	local Connections = self.Connections
 	for a = 1, #Connections do
 		Connections[a](...)

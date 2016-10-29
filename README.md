@@ -9,10 +9,10 @@ to the writer.
 ```javascript
 class UserInputService
 	Properties
-	
+
 		table/PlayerMouse Mouse
 //			returns the LocalPlayer's Mouse with added API (demonstrated below)
-		
+
 		table Keys
 //			Similar to Mouse, you can access Keys from this table
 ```
@@ -26,20 +26,20 @@ the key "Q", you'd simply write that:
 ```lua
 local UserInputService = require(UserInputServiceModule)
 local Keys = UserInputService.Keys
-local Q = Keys.Q
+local QDown = Keys.Q.KeyDown
 
-local QPress = Q.KeyDown:connect(function()
+local QPress = Q:Connect(function()
 	print("Q was pressed")
 end)
 
--- Manual fire
-Q.KeyDown:Fire()
+-- Manual Fire
+Q:Press() -- Same as Q:Fire()
 
-Q.KeyDown:disconnect() -- disconnect everything binded to Q.KeyDown
-QPress:disconnect() -- disconnect one connection
+Q:Disconnect() -- disconnect everything binded to Q.KeyDown
+QPress:Disconnect() -- disconnect one connection
 
 -- Wait until the player presses
-Q.KeyDown:wait()
+Q:Wait()
 ```
 Each key has a "KeyUp" and "KeyDown" event that comes with it. So you can't just
 connect the key to an event, you must specify if the event will fire on KeyUp
@@ -47,7 +47,7 @@ or on KeyDown.
 
 Note: KeyUp and KeyDown events do not involve the deprecated methods of PlayerMouse.
 
-##Mouse events
+## Mouse events
 Mouse events remain the same as just creating them normally on the real
 PlayerMouse object. For example, creating a Button1Down event would be
 done like so:
@@ -55,16 +55,17 @@ done like so:
 ```lua
 local UserInputService = require(UserInputServiceModule)
 local Mouse = UserInputService.Mouse
+local Button1Down = Mouse.Button1Down
 
-local LeftClick = Mouse.Button1Down:connect(function()
+local LeftClick = Button1Down:Connect(function()
 	print("Button was clicked")
 end)
 
 -- And of course you could fire it manually, since it returns a custom event
-Mouse.Button1Down:Fire()
+Button1Down:Fire()
 
-Mouse.Button1Down:disconnect() -- Disconnect all connections binded to this event
-LeftClick:disconnect() -- Disconnect the one connection
+Button1Down:Disconnect() -- Disconnect all connections binded to this event
+LeftClick:Disconnect() -- Disconnect the one connection
 
-Mouse.Button1Down:wait() -- Wait for the Event to happen
+Button1Down:Wait() -- Wait for the Event to happen
 ```

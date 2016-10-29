@@ -26,7 +26,7 @@ the key "Q", you'd simply write that:
 ```lua
 local UserInputService = require(UserInputServiceModule)
 local Keys = UserInputService.Keys
-local QDown = Keys.Q.KeyDown
+local Q = Keys.Q.KeyDown
 
 local QPress = Q:Connect(function()
 	print("Q was pressed")

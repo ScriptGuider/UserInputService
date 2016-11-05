@@ -34,7 +34,7 @@ local UserInputService = require(UserInputServiceModule)
 local Keys = UserInputService.Keys
 local Q = Keys.Q.KeyDown
 local E = Keys.E.KeyUp
-local R = Keys.R -- Abbreviated form of Keys.R.KeyUp
+local R = Keys.R -- Abbreviated form of Keys.R.KeyDown
 
 local QPress = Q:Connect(function()
 	print("Q was pressed")
@@ -50,13 +50,24 @@ QPress:Disconnect() -- disconnect one connection
 -- Wait until the player KeyDown's Q
 Q:Wait()
 ```
-Each key has a "KeyUp" and "KeyDown" event that comes with it. So you can't just
-connect the key to an event, you must specify if the event will fire on KeyUp
-or on KeyDown.
+Each key has a "KeyUp" and "KeyDown" event that comes with it. If you don't specify, it will default to KeyDown.
+
+### Chaining events
+You can also chain events using the `+` operator. Be careful when using this in Studio though, as your operating system shortcuts take precedence over Roblox.
+```lua
+local Keys = UserInputService.Keys
+local L = Keys.L.KeyDown
+local F = Keys.F -- Defaults to KeyDown
+local R = Keys.R
+
+local MenuSelect = (L + F + R):Connect(function()
+	print("User pressed L + F + R")
+end)
+```
 
 Note: KeyUp and KeyDown events do not run off of the deprecated methods of PlayerMouse.
 
-Note: `Keys["KeyName"]` can be used as an abbreviation for `Keys["KeyName"].KeyUp`. Example given in code above with variable declaration `R`
+Note: `Keys["KeyName"]` can be used as an abbreviation for `Keys["KeyName"].KeyDown`. Example given in code above with variable declaration `R`
 
 ## Mouse events
 Mouse events remain the same as just creating them normally on the PlayerMouse object. For example, creating a Button1Down event would be done like so:

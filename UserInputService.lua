@@ -10,6 +10,7 @@ local StarterGui = GetService(game, "StarterGui")
 local Players = GetService(game, "Players")
 
 -- Optimize
+local GetKeysPressed = InputService.GetKeysPressed
 local Connect = InputService.InputBegan.Connect
 local Heartbeat = RunService.Heartbeat
 local Wait = Heartbeat.Wait
@@ -19,6 +20,7 @@ local GetChildren = game.GetChildren
 local sub = string.sub
 local time = os.time
 local find = string.find
+local match = string.match
 local remove = table.remove
 local error, type, select, setmetatable, rawset, tostring, tick = error, type, select, setmetatable, rawset, tostring, tick
 
@@ -77,11 +79,43 @@ local Signal = {
 	Connect = ConnectSignal;
 	Disconnect = DisconnectSignal;
 }
-Signal.__index = Signal
 
-local function newSignal()
-	return setmetatable({Connections = {}}, Signal)
+local function newSignal(Name)
+	return setmetatable({Connections = {}; Name = Name}, Signal)
 end
+
+local KeysPressed
+
+local function AddSignals(a, b)
+	local ComboName, Bool = a.Name .. "+" .. b.Name
+	local Combo = newSignal(ComboName)
+
+	local function Verify(KeyName)
+		if Bool then
+			for a = 1, #KeysPressed do
+				if KeysPressed[a].KeyCode.Name == KeyName then
+					Bool = true
+					break
+				else
+					Bool = false
+				end
+			end
+		end
+	end
+
+	b:Connect(function()
+		KeysPressed = GetKeysPressed(InputService)
+		Bool = true
+		string.gsub(ComboName .. "+","(.-)%+", Verify)
+		if Bool then
+			FireSignal(Combo)
+		end
+	end)
+
+	return Combo
+end
+Signal.__add = AddSignals
+Signal.__index = Signal
 
 -- Library & Input
 local RegisteredKeys = {}
@@ -90,16 +124,20 @@ local Mouse = {__newindex = PlayerMouse}
 local Key = {}
 
 function Key:__index(i)
-	return self.KeyUp[i]
+	return self.KeyDown[i]
+end
+
+function Key.__add(a, b)
+	return a.KeyDown + b
 end
 
 function Keys:__index(v)
 	assert(type(v) == "string", "Table Keys should be indexed by a string")
-	local Connections = setmetatable({
-		KeyUp = newSignal();
-		KeyDown = newSignal();
-	}, Key)
-	self[v] = Connections
+	local Connections = {
+		KeyUp = newSignal(v);
+		KeyDown = newSignal(v);
+	}
+	self[v] = setmetatable(Connections, Key)
 	RegisteredKeys[v] = true
 	return Connections
 end
@@ -114,8 +152,10 @@ function Mouse:__index(v)
 				local ClickedTime = tick()
 				if ClickedTime - LastClicked < 0.5 then
 					FireSignal(Stored, PlayerMouse)
+					LastClicked = 0
+				else
+					LastClicked = ClickedTime
 				end
-				LastClicked = ClickedTime
 			end)
 		else
 			local Mickey = PlayerMouse[v]
@@ -131,11 +171,12 @@ function Mouse:__index(v)
 	end
 end
 
-local function KeyInputHandler(KeyEvent)
+local function KeyInputHandler(KeyEvent, Boolean)
 	local RegisteredKeys, FireSignal, Keys = RegisteredKeys, FireSignal, Keys
 	return function(KeyName, processed)
 		if not processed then
 			KeyName = KeyName.KeyCode.Name
+--			KeysPressed[KeyName] = Boolean
 			if RegisteredKeys[KeyName] then
 				FireSignal(Keys[KeyName][KeyEvent])
 			end
@@ -212,7 +253,7 @@ function Input:__index(i)
 	return Variable
 end
 
-Connect(InputService.InputBegan, KeyInputHandler("KeyDown")) -- InputBegan listener
+Connect(InputService.InputBegan, KeyInputHandler("KeyDown", true)) -- InputBegan listener
 Connect(InputService.InputEnded, KeyInputHandler("KeyUp")) -- InputEnded listener
 Connect(InputService.WindowFocusReleased, WindowFocusReleased)
 Connect(InputService.WindowFocused, WindowFocused)

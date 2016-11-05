@@ -113,15 +113,15 @@ function Mouse:__index(v)
 			Connect(PlayerMouse[sub(v, 7)], function()
 				local ClickedTime = tick()
 				if ClickedTime - LastClicked < 0.5 then
-					FireSignal(Stored)
+					FireSignal(Stored, PlayerMouse)
 				end
 				LastClicked = ClickedTime
 			end)
 		else
 			local Mickey = PlayerMouse[v]
 			if find(tostring(Mickey), "Signal") then
-				Connect(Mickey, function(...)
-					return FireSignal(Stored, ...)
+				Connect(Mickey, function()
+					return FireSignal(Stored, PlayerMouse)
 				end)
 			end
 		end

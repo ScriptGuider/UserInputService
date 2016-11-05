@@ -16,10 +16,11 @@ local Wait = Heartbeat.Wait
 local SetCore = StarterGui.SetCore
 local GetChildren = game.GetChildren
 
+local sub = string.sub
 local time = os.time
 local find = string.find
 local remove = table.remove
-local error, type, select, setmetatable, rawset, tostring = error, type, select, setmetatable, rawset, tostring
+local error, type, select, setmetatable, rawset, tostring, tick = error, type, select, setmetatable, rawset, tostring, tick
 
 -- Client
 local Player = Players.LocalPlayer
@@ -104,16 +105,29 @@ function Keys:__index(v)
 end
 
 function Mouse:__index(v)
-	local Mickey = PlayerMouse[v]
-	if type(v) == "string" and find(tostring(Mickey), "Signal") then
+	if type(v) == "string" then
 		local Stored = newSignal()
 		rawset(self, v, Stored)
-		Connect(Mickey, function(...)
-			return FireSignal(Stored, ...)
-		end)
+		if find(v, "^Double") then
+			local LastClicked = 0
+			Connect(PlayerMouse[sub(v, 7)], function()
+				local ClickedTime = tick()
+				if ClickedTime - LastClicked < 0.5 then
+					FireSignal(Stored)
+				end
+				LastClicked = ClickedTime
+			end)
+		else
+			local Mickey = PlayerMouse[v]
+			if find(tostring(Mickey), "Signal") then
+				Connect(Mickey, function(...)
+					return FireSignal(Stored, ...)
+				end)
+			end
+		end
 		return Stored
 	else
-		return Mickey or error(Mickey .. " is not a valid member of PlayerMouse")
+		return PlayerMouse[v]
 	end
 end
 

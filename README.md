@@ -59,9 +59,7 @@ Note: KeyUp and KeyDown events do not run off of the deprecated methods of Playe
 Note: `Keys["KeyName"]` can be used as an abbreviation for `Keys["KeyName"].KeyUp`. Example given in code above with variable declaration `R`
 
 ## Mouse events
-Mouse events remain the same as just creating them normally on the real
-PlayerMouse object. For example, creating a Button1Down event would be
-done like so:
+Mouse events remain the same as just creating them normally on the PlayerMouse object. For example, creating a Button1Down event would be done like so:
 
 ```lua
 local UserInputService = require(UserInputServiceModule)
@@ -79,6 +77,17 @@ Button1Down:Disconnect() -- Disconnect all connections binded to this event
 LeftClick:Disconnect() -- Disconnect the one connection
 
 Button1Down:Wait() -- Wait for the Event to happen
+```
+
+Some added functionality is the ability to put `Double` before any PlayerMouse Event Name to detect double clicks.
+```lua
+local UserInputService = require(UserInputServiceModule)
+local Mouse = UserInputService.Mouse
+local DoubleClick = Mouse.DoubleButton1Up -- Fires when DoubleButton1Up is Fired twice within 0.5 seconds
+
+DoubleClick:Connect(function()
+	print("DoubleClick detected")
+end)
 ```
 
 ## WelcomeBack Event
